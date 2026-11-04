@@ -1,0 +1,418 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>PULTE AP - AI vs QC Accuracy Dashboard</title>
+<style>
+:root{--bg:#f6f7f9;--card:#fff;--tx:#1b1f27;--mut:#667085;--bd:#e4e7ec;--ok:#12805c;--err:#d92d20;--yel:#e0a100;--wht:#7a869a;--blu:#2563eb;--pur:#7c3aed;
+box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#0f1218;--card:#181c25;--tx:#e8eaf0;--mut:#98a2b3;--bd:#2a303c;--ok:#34d399;--err:#f87171;--yel:#fbbf24;--wht:#94a3b8;--blu:#60a5fa;--pur:#a78bfa}}
+:root[data-theme="dark"]{--bg:#0f1218;--card:#181c25;--tx:#e8eaf0;--mut:#98a2b3;--bd:#2a303c;--ok:#34d399;--err:#f87171;--yel:#fbbf24;--wht:#94a3b8;--blu:#60a5fa;--pur:#a78bfa}
+*{box-sizing:border-box}html{scroll-padding-top:env(safe-area-inset-top,0px)}
+body{margin:0;background:var(--bg);color:var(--tx);font:14px/1.45 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif}
+.wrap{max-width:1200px;margin:0 auto;padding:20px 16px 40px}
+h1{font-size:22px;margin:0}.sub{color:var(--mut);margin:4px 0 14px}
+.grid{display:grid;gap:12px}.kpis{grid-template-columns:repeat(auto-fit,minmax(170px,1fr))}
+.two{grid-template-columns:repeat(auto-fit,minmax(340px,1fr));margin-top:12px}
+.card{background:var(--card);border:1px solid var(--bd);border-radius:12px;padding:14px 16px}
+.kpi .l{color:var(--mut);font-size:12px;text-transform:uppercase;letter-spacing:.04em}
+.kpi .v{font-size:28px;font-weight:700;margin:2px 0}.kpi .s{color:var(--mut);font-size:12px}
+.kpi{border-top:3px solid var(--c)}
+h2{font-size:15px;margin:0 0 4px}.note{color:var(--mut);font-size:12px;margin:0 0 10px}
+svg{width:100%;height:auto;display:block}svg text{fill:var(--mut);font:11px system-ui,sans-serif}
+.tw{overflow-x:auto}table{width:100%;border-collapse:collapse;min-width:640px}
+th,td{padding:8px 10px;text-align:right;border-bottom:1px solid var(--bd);white-space:nowrap}
+th:first-child,td:first-child,th:nth-child(2),td:nth-child(2){text-align:left}
+th{color:var(--mut);font-weight:600;font-size:12px}tfoot td{font-weight:700;border-bottom:0}
+.pill{display:inline-block;padding:1px 8px;border-radius:99px;font-size:12px;font-weight:600}
+.lg{display:flex;flex-wrap:wrap;gap:12px;font-size:12px;color:var(--mut);margin-top:6px}
+.lg i{display:inline-block;width:10px;height:10px;border-radius:2px;margin-right:5px;vertical-align:-1px}
+.logic td:first-child{font-weight:600}
+code{background:var(--bg);padding:1px 6px;border-radius:5px;font-size:12px}
+.filters{display:flex;flex-wrap:wrap;gap:14px;align-items:flex-end;margin-bottom:14px}
+.filters label{display:flex;flex-direction:column;gap:4px;font-size:12px;color:var(--mut);text-transform:uppercase;letter-spacing:.04em}
+select{background:var(--card);color:var(--tx);border:1px solid var(--bd);border-radius:8px;padding:8px 10px;font-size:14px;min-width:200px;text-transform:none;letter-spacing:0}
+.tbar{display:flex;flex-wrap:wrap;gap:14px;align-items:flex-end;margin-bottom:10px}
+.err{color:var(--err);padding:12px}
+.tabs{display:flex;flex-wrap:wrap;gap:6px;margin:0 0 14px}.tabs button{background:var(--card);color:var(--tx);border:1px solid var(--bd);border-radius:99px;padding:7px 14px;font-size:13px;cursor:pointer}.tabs button.on{background:var(--blu);color:#fff;border-color:var(--blu)}
+.rt th:nth-child(2),.rt td:nth-child(2){text-align:right}
+</style>
+</head>
+<body>
+<div class="wrap">
+<h1>PULTE AP - AI vs QC Accuracy Dashboard</h1>
+<div style="text-align:left;font-size:12px;line-height:1.6;color:var(--mut);margin:6px 0 4px"><div><b style="color:var(--tx)">Analysis &amp; Design:</b> Sandeep Patil, Shubham Gharal, Milan Pawar</div><div><b style="color:var(--tx)">Special Thanks:</b> Amar Jagdale, Ratish Vaje</div></div>
+<p class="sub" id="sub"></p>
+
+<div class="tabs" id="tabs"><button data-t="all" class="on">All Weeks</button><button data-t="w3">Week 3 · 19–23 Oct</button><button data-t="w4">Week 4 · 26–30 Oct</button><button data-t="cmp">Week 3 vs Week 4</button></div>
+<div class="filters" id="filters">
+  <label>Process Date<select id="selDate"></select></label>
+  <label>Folder Name<select id="selBatch"></select></label>
+</div>
+
+<div id="mainView">
+<div class="grid kpis" id="kpis"></div>
+
+<div class="card" style="margin-top:12px">
+  <div class="tbar">
+    <div><h2>Metric Trend</h2><p class="note" style="margin:0">Choose a metric to see how it moves across batches</p></div>
+    <label style="display:flex;flex-direction:column;gap:4px;font-size:12px;color:var(--mut);text-transform:uppercase;letter-spacing:.04em">Metric<select id="selMetric"></select></label>
+  </div>
+  <div id="trend"></div>
+</div>
+
+<div class="grid two">
+  <div class="card"><h2>AI Accuracy by Batch</h2><p class="note">Pass 1 = QC (correct) ÷ total fields</p><div id="accChart"></div></div>
+  <div class="card"><h2>Overall Pass 1 Outcome</h2><p class="note">Correct vs errors</p><div id="donut"></div></div>
+</div>
+
+<div class="grid two">
+  <div class="card"><h2>Fields Processed per Batch</h2><p class="note">Stacked: Pass 1 correct + Pass 1 errors</p><div id="volChart"></div></div>
+  <div class="card"><h2>Correction Rates by Batch</h2><p class="note">White, Yellow and Pass 1 error rate (% of total fields)</p><div id="rateChart"></div></div>
+</div>
+
+<div class="card" style="margin-top:12px">
+  <h2>Batch Detail</h2><p class="note">All counts come from the Analysis sheet pivots; percentages are calculated here.</p>
+  <div class="tw"><table id="tbl"></table></div>
+</div>
+</div>
+
+<div id="cmpView" style="display:none">
+ <p class="note">Week 3 (19–23 Oct) vs Week 4 (26–30 Oct) · same weekday compared side by side</p>
+ <div class="grid kpis" id="cmpKpis"></div>
+ <div class="card" style="margin-top:12px" id="cmpNotes"></div>
+ <div class="card" style="margin-top:12px"><div class="tbar"><div><h2>Day-wise Trend: Week 3 vs Week 4</h2><p class="note" style="margin:0">Mon to Fri overlay for the selected metric</p></div><label style="display:flex;flex-direction:column;gap:4px;font-size:12px;color:var(--mut);text-transform:uppercase;letter-spacing:.04em">Metric<select id="selCmpMetric"></select></label></div><div id="cmpTrend"></div></div>
+ <div class="grid two"><div class="card"><h2>Rate Comparison</h2><p class="note">Week-level rates</p><div id="cmpBars"></div></div><div class="card"><h2>Metric Comparison</h2><p class="note">Change from Week 3 to Week 4</p><div class="tw"><table id="cmpTbl" class="rt" style="min-width:420px"></table></div></div></div>
+ <div class="card" style="margin-top:12px"><h2>Day-wise Detail</h2><p class="note">AI accuracy and volume by weekday</p><div class="tw"><table id="cmpDay" class="rt" style="min-width:640px"></table></div></div>
+</div>
+
+<div id="fieldView">
+
+<div class="card" style="margin-top:12px">
+  <div class="tbar">
+    <div><h2>Field-wise Match Rates</h2><p class="note" style="margin:0">Week 3 (19–23 Oct) Master Data summary · 789 images × 14 fields · match % = TRUE count ÷ images</p></div>
+    <label style="display:flex;flex-direction:column;gap:4px;font-size:12px;color:var(--mut);text-transform:uppercase;letter-spacing:.04em">Field Type<select id="selType"><option value="all">All types</option><option value="dual">Dual Pass</option><option value="single">Single Pass</option></select></label>
+    <label style="display:flex;flex-direction:column;gap:4px;font-size:12px;color:var(--mut);text-transform:uppercase;letter-spacing:.04em">Field<select id="selField"></select></label>
+    <label style="display:flex;flex-direction:column;gap:4px;font-size:12px;color:var(--mut);text-transform:uppercase;letter-spacing:.04em">Rank fields by<select id="selCmp"></select></label>
+  </div>
+  <div class="grid two" style="margin-top:0">
+    <div><h2 id="fbTitle" style="font-size:14px"></h2><div id="fieldBars"></div></div>
+    <div><h2 id="frTitle" style="font-size:14px"></h2><div id="fieldRank"></div></div>
+  </div>
+  <div class="tw" style="margin-top:12px"><table id="fieldTbl" style="min-width:760px"></table></div>
+</div>
+
+<div class="card" style="margin-top:12px">
+  <h2>Field Type Analysis: Single Pass vs Dual Pass</h2>
+  <p class="note">Dual Pass = Pass 1 + Pass 2 + Compare (8 fields) · Single Pass = Pass 1 + Compare (6 fields) · rates use the Master Data summary (789 images per field)</p>
+  <div class="grid kpis" id="ftKpis"></div>
+  <div class="grid two">
+    <div><h2 style="font-size:14px">Accuracy by Stage: Dual vs Single</h2><div id="ftChart"></div></div>
+    <div><h2 style="font-size:14px">Field Configuration</h2><div class="tw" style="max-height:340px;overflow:auto"><table id="ftCfg" style="min-width:560px"></table></div></div>
+  </div>
+  <div id="ftNotes" style="margin-top:12px;padding:12px 14px;border:1px solid var(--bd);border-radius:10px;background:var(--bg);font-size:13px"></div>
+  <h2 style="font-size:14px;margin-top:14px">Field-level Stage Progression</h2>
+  <div class="tw"><table id="ftTbl" style="min-width:760px"></table></div>
+</div>
+
+</div>
+
+<div class="card" style="margin-top:12px">
+  <h2>Metric Logic</h2>
+  <div class="tw"><table class="logic" style="min-width:560px">
+    <tr><th>Table</th><th style="text-align:left">Filter</th></tr>
+    <tr><td>White Field</td><td style="text-align:left"><code>P1=P2 TRUE</code> <code>COMP=QC FALSE</code></td></tr>
+    <tr><td>Yellow Fields</td><td style="text-align:left"><code>P1=P2 FALSE</code> <code>COMP=QC TRUE</code></td></tr>
+    <tr><td>Pass 2 = Compare</td><td style="text-align:left"><code>P1=P2 FALSE</code> <code>P2=COM TRUE</code> <code>COMP=QC TRUE</code></td></tr>
+    <tr><td>Pass 1 Errors</td><td style="text-align:left"><code>PASS 1=QC FALSE</code></td></tr>
+    <tr><td>Pass 1 Correct</td><td style="text-align:left"><code>PASS 1=QC TRUE</code></td></tr>
+  </table></div>
+</div>
+</div>
+
+<script>
+// Source: Google Sheet "CAPTURE ALL DATA" > Analysis tab (per-batch pivots)
+var ALL=[
+ {date:"19/10/2026",batch:"003656040.pbatexp",white:11,yellow:236,p2:142,err:240,ok:978},
+ {date:"20/10/2026",batch:"003656211.pbatexp",white:1,yellow:192,p2:88,err:139,ok:799},
+ {date:"21/10/2026",batch:"003656415.pbatexp",white:44,yellow:654,p2:334,err:561,ok:3065},
+ {date:"22/10/2026",batch:"003656464.pbatexp",white:36,yellow:535,p2:249,err:456,ok:2596},
+ {date:"23/10/2026",batch:"003656739.pbatexp",white:14,yellow:474,p2:248,err:432,ok:1780},
+ {date:"26/10/2026",batch:"003656919.pbatexp",white:9,yellow:274,p2:111,err:146,ok:1338},
+ {date:"27/10/2026",batch:"003657095.pbatexp",white:26,yellow:434,p2:236,err:379,ok:2225},
+ {date:"28/10/2026",batch:"003657185.pbatexp",white:10,yellow:242,p2:154,err:296,ok:1552},
+ {date:"29/10/2026",batch:"003657351.pbatexp",white:3,yellow:476,p2:215,err:258,ok:2528},
+ {date:"30/10/2026",batch:"003657653.pbatexp",white:48,yellow:789,p2:353,err:626,ok:2748},
+ {date:"02/11/2026",batch:"003657710.pbatexp",white:10,yellow:477,p2:228,err:356,ok:1870}
+];
+function calc(r){r.total=r.err+r.ok;r.acc=r.ok/r.total;r.errR=r.err/r.total;r.wR=r.white/r.total;r.yR=r.yellow/r.total;r.p2R=r.yellow?r.p2/r.yellow:0;r.d=(r.date||"").slice(0,5);return r}
+ALL.forEach(calc);
+ALL.forEach(function(r,i){r.week=i<5?'Week 3':i<10?'Week 4':'Week 5'});
+function pc(n,d){return (n*100).toFixed(d==null?2:d)+"%"}
+function nf(n){return Number(n).toLocaleString("en-IN")}
+function css(v){return "var(--"+v+")"}
+function el(i){return document.getElementById(i)}
+function legend(a){return '<div class="lg">'+a.map(function(x){return '<span><i style="background:'+css(x[1])+'"></i>'+x[0]+'</span>'}).join("")+'</div>'}
+function sum(D,k){return D.reduce(function(a,r){return a+r[k]},0)}
+
+// Trend metrics: key, label, type (pct/count), colour
+var METRICS=[
+ ["acc","AI Accuracy %","pct","ok"],
+ ["errR","Pass 1 Error %","pct","err"],
+ ["yR","Yellow Fields %","pct","yel"],
+ ["wR","White Fields %","pct","wht"],
+ ["p2R","Pass 2 = Compare (% of Yellow)","pct","pur"],
+ ["cumAcc","Cumulative AI Accuracy %","pct","ok"],
+ ["cumErr","Cumulative Pass 1 Error %","pct","err"],
+ ["total","Total Fields","count","blu"],
+ ["ok","Pass 1 Correct","count","ok"],
+ ["err","Pass 1 Errors","count","err"],
+ ["yellow","Yellow Fields","count","yel"],
+ ["white","White Fields","count","wht"],
+ ["p2","Pass 2 = Compare","count","pur"],
+ ["cumTotal","Cumulative Total Fields","count","blu"]
+];
+
+function fill(sel,vals,allLabel){sel.innerHTML='<option value="all">'+allLabel+'</option>'+vals.map(function(v){return '<option value="'+v+'">'+v+'</option>'}).join("")}
+fill(el("selDate"),ALL.map(function(r){return r.date}),"All dates");
+fill(el("selBatch"),ALL.map(function(r){return r.batch}),"All folders");
+el("selMetric").innerHTML=METRICS.map(function(m){return '<option value="'+m[0]+'">'+m[1]+'</option>'}).join("");
+
+function filtered(){
+ var d=el("selDate").value,b=el("selBatch").value;
+ return weekRows(TAB).filter(function(r){return (d==="all"||r.date===d)&&(b==="all"||r.batch===b)});
+}
+
+function render(){
+ try{
+  var D=filtered();
+  if(!D.length){
+   ["kpis","trend","accChart","donut","volChart","rateChart","tbl"].forEach(function(i){el(i).innerHTML='<div class="err">No data for this Process Date / Folder Name combination.</div>'});
+   el("sub").textContent="No matching batches";return;
+  }
+  // running totals for cumulative trends
+  var ct=0,co=0,ce=0;
+  D.forEach(function(r){ct+=r.total;co+=r.ok;ce+=r.err;r.cumTotal=ct;r.cumAcc=co/ct;r.cumErr=ce/ct});
+  var T=calc({date:"",white:sum(D,"white"),yellow:sum(D,"yellow"),p2:sum(D,"p2"),err:sum(D,"err"),ok:sum(D,"ok")});
+  el("sub").textContent=D.length+" of "+weekRows(TAB).length+" batches · "+D[0].date+(D.length>1?" to "+D[D.length-1].date:"")+" · "+nf(T.total)+" fields";
+  kpis(T);trend(D);acc(D,T);donut(T);vol(D);rates(D);table(D,T);
+ }catch(e){document.body.insertAdjacentHTML("afterbegin",'<div class="err">Render error: '+e.message+'</div>')}
+}
+
+function kpis(T){
+ var K=[["Total Fields",nf(T.total),"Selected batches","blu"],["AI Accuracy",pc(T.acc),nf(T.ok)+" Pass 1 = QC","ok"],["Pass 1 Errors",pc(T.errR),nf(T.err)+" Pass 1 ≠ QC","err"],["Yellow Fields",pc(T.yR),nf(T.yellow)+" corrections","yel"],["White Fields",pc(T.wR),nf(T.white)+" fields","wht"],["Pass 2 = Compare",nf(T.p2),pc(T.p2R,1)+" of yellow fields","pur"]];
+ el("kpis").innerHTML=K.map(function(k){return '<div class="card kpi" style="--c:'+css(k[3])+'"><div class="l">'+k[0]+'</div><div class="v">'+k[1]+'</div><div class="s">'+k[2]+'</div></div>'}).join("");
+}
+
+function trend(D){
+ var key=el("selMetric").value,m=METRICS.filter(function(x){return x[0]===key})[0],isP=m[2]==="pct",c=css(m[3]);
+ var W=900,H=300,l=56,r=20,t=24,b=34,pw=W-l-r,ph=H-t-b,n=D.length;
+ var vals=D.map(function(x){return x[key]}),mn=Math.min.apply(null,vals),mx=Math.max.apply(null,vals);
+ var lo,hi;
+ if(isP){var pad=Math.max((mx-mn)*0.5,0.01);lo=Math.max(0,mn-pad);hi=mx+pad;if(key==="acc"||key==="cumAcc")hi=Math.min(1,hi)}
+ else{lo=0;hi=mx*1.12||1}
+ if(hi===lo)hi=lo+1;
+ function gx(i){return l+(n===1?pw/2:pw*i/(n-1))}
+ function gy(v){return t+ph*(1-(v-lo)/(hi-lo))}
+ function fmt(v){return isP?pc(v,1):nf(Math.round(v))}
+ var s='<svg viewBox="0 0 '+W+' '+H+'" role="img" aria-label="'+m[1]+' trend">';
+ for(var i=0;i<=4;i++){var v=lo+(hi-lo)*i/4,y=gy(v);s+='<line x1="'+l+'" x2="'+(W-r)+'" y1="'+y+'" y2="'+y+'" stroke="var(--bd)"/><text x="'+(l-8)+'" y="'+(y+4)+'" text-anchor="end">'+fmt(v)+'</text>'}
+ D.forEach(function(x,i){s+='<text x="'+gx(i)+'" y="'+(H-12)+'" text-anchor="middle">'+x.d+'</text>'});
+ if(n>1){
+  var pts=D.map(function(x,i){return gx(i)+","+gy(x[key])}).join(" ");
+  s+='<polygon points="'+gx(0)+","+(t+ph)+" "+pts+" "+gx(n-1)+","+(t+ph)+'" fill="'+c+'" opacity="0.10"/>';
+  s+='<polyline fill="none" stroke="'+c+'" stroke-width="3" stroke-linejoin="round" points="'+pts+'"/>';
+ }
+ D.forEach(function(x,i){s+='<circle cx="'+gx(i)+'" cy="'+gy(x[key])+'" r="5" fill="'+c+'"><title>'+x.d+': '+(isP?pc(x[key]):nf(x[key]))+'</title></circle><text x="'+gx(i)+'" y="'+(gy(x[key])-11)+'" text-anchor="middle" style="fill:var(--tx);font-weight:600">'+(isP?pc(x[key],1):nf(x[key]))+'</text>'});
+ el("trend").innerHTML=s+"</svg>"+legend([[m[1],m[3]]]);
+}
+
+function acc(D,T){
+ var W=520,H=240,l=36,b=30,t=18,bw=(W-l-10)/D.length,ph=H-b-t,w=Math.min(70,bw*.6);
+ var s='<svg viewBox="0 0 '+W+' '+H+'" role="img" aria-label="AI accuracy by batch">';
+ [0,25,50,75,100].forEach(function(g){var y=t+ph*(1-g/100);s+='<line x1="'+l+'" x2="'+(W-6)+'" y1="'+y+'" y2="'+y+'" stroke="var(--bd)"/><text x="'+(l-6)+'" y="'+(y+4)+'" text-anchor="end">'+g+'%</text>'});
+ D.forEach(function(r,i){var x=l+i*bw+(bw-w)/2,h=ph*r.acc,y=t+ph-h;
+  s+='<rect x="'+x+'" y="'+y+'" width="'+w+'" height="'+h+'" rx="4" fill="var(--ok)"/><text x="'+(x+w/2)+'" y="'+(y-4)+'" text-anchor="middle" style="fill:var(--tx);font-weight:600">'+pc(r.acc,1)+'</text><text x="'+(x+w/2)+'" y="'+(H-10)+'" text-anchor="middle">'+r.d+'</text>'});
+ var ya=t+ph*(1-T.acc);
+ s+='<line x1="'+l+'" x2="'+(W-6)+'" y1="'+ya+'" y2="'+ya+'" stroke="var(--blu)" stroke-dasharray="4 3"/></svg>';
+ el("accChart").innerHTML=s+legend([["Batch accuracy","ok"],["Overall "+pc(T.acc,1),"blu"]]);
+}
+
+function donut(T){
+ var R=70,C=2*Math.PI*R;
+ el("donut").innerHTML='<svg viewBox="0 0 260 190" role="img" aria-label="Pass 1 correct vs errors"><g transform="translate(95,95) rotate(-90)"><circle r="'+R+'" fill="none" stroke="var(--err)" stroke-width="26"/><circle r="'+R+'" fill="none" stroke="var(--ok)" stroke-width="26" stroke-dasharray="'+(C*T.acc)+' '+C+'"/></g>'
+ +'<text x="95" y="93" text-anchor="middle" style="fill:var(--tx);font-size:22px;font-weight:700">'+pc(T.acc,1)+'</text><text x="95" y="110" text-anchor="middle">AI accuracy</text>'
+ +'<text x="185" y="80" style="fill:var(--tx);font-weight:600">'+nf(T.ok)+'</text><text x="185" y="94">Correct</text>'
+ +'<text x="185" y="122" style="fill:var(--tx);font-weight:600">'+nf(T.err)+'</text><text x="185" y="136">Errors</text></svg>'
+ +legend([["Pass 1 Correct","ok"],["Pass 1 Errors","err"]]);
+}
+
+function vol(D){
+ var W=520,H=240,l=44,b=30,t=18,bw=(W-l-10)/D.length,ph=H-b-t,w=Math.min(70,bw*.6);
+ var mx=Math.ceil(Math.max.apply(null,D.map(function(r){return r.total}))/1000)*1000||1000;
+ var s='<svg viewBox="0 0 '+W+' '+H+'" role="img" aria-label="Fields per batch">';
+ for(var i=0;i<=4;i++){var v=mx*i/4,y=t+ph*(1-i/4);s+='<line x1="'+l+'" x2="'+(W-6)+'" y1="'+y+'" y2="'+y+'" stroke="var(--bd)"/><text x="'+(l-6)+'" y="'+(y+4)+'" text-anchor="end">'+nf(v)+'</text>'}
+ D.forEach(function(r,i){var x=l+i*bw+(bw-w)/2,h1=ph*r.ok/mx,h2=ph*r.err/mx;
+  s+='<rect x="'+x+'" y="'+(t+ph-h1)+'" width="'+w+'" height="'+h1+'" fill="var(--ok)"/><rect x="'+x+'" y="'+(t+ph-h1-h2)+'" width="'+w+'" height="'+h2+'" rx="3" fill="var(--err)"/><text x="'+(x+w/2)+'" y="'+(t+ph-h1/2+4)+'" text-anchor="middle" style="fill:#fff;font-weight:600">'+nf(r.ok)+'</text>'+(h2>=14?'<text x="'+(x+w/2)+'" y="'+(t+ph-h1-h2/2+4)+'" text-anchor="middle" style="fill:#fff;font-weight:600">'+nf(r.err)+'</text>':'<text x="'+(x+w+4)+'" y="'+(t+ph-h1-h2/2+4)+'" style="fill:var(--err);font-weight:600">'+nf(r.err)+'</text>')+'<text x="'+(x+w/2)+'" y="'+(t+ph-h1-h2-4)+'" text-anchor="middle" style="fill:var(--tx);font-weight:600">'+nf(r.total)+'</text><text x="'+(x+w/2)+'" y="'+(H-10)+'" text-anchor="middle">'+r.d+'</text>'});
+ el("volChart").innerHTML=s+"</svg>"+legend([["Pass 1 Correct","ok"],["Pass 1 Errors","err"]]);
+}
+
+function rates(D){
+ var W=520,H=240,l=36,b=30,t=14,gw=(W-l-10)/D.length,ph=H-b-t,mx=25;
+ var s='<svg viewBox="0 0 '+W+' '+H+'" role="img" aria-label="Rates by batch">';
+ [0,5,10,15,20,25].forEach(function(g){var y=t+ph*(1-g/mx);s+='<line x1="'+l+'" x2="'+(W-6)+'" y1="'+y+'" y2="'+y+'" stroke="var(--bd)"/><text x="'+(l-6)+'" y="'+(y+4)+'" text-anchor="end">'+g+'%</text>'});
+ var ser=[["wR","wht"],["yR","yel"],["errR","err"]];
+ D.forEach(function(r,i){var bw=Math.min(30,gw*.28);
+  ser.forEach(function(q,j){var x=l+i*gw+gw/2-bw*1.5-2+j*(bw+2),h=ph*r[q[0]]*100/mx;
+   s+='<rect x="'+x+'" y="'+(t+ph-h)+'" width="'+bw+'" height="'+h+'" rx="2" fill="'+css(q[1])+'"><title>'+r.d+': '+pc(r[q[0]])+'</title></rect>'+(D.length<=6?'<text x="'+(x+bw/2)+'" y="'+(t+ph-h-4)+'" text-anchor="middle" style="fill:var(--tx);font-size:9px;font-weight:600">'+pc(r[q[0]],1)+'</text>':'')});
+  s+='<text x="'+(l+i*gw+gw/2)+'" y="'+(H-10)+'" text-anchor="middle">'+r.d+'</text>'});
+ el("rateChart").innerHTML=s+"</svg>"+legend([["White","wht"],["Yellow","yel"],["Pass 1 Error","err"]]);
+}
+
+function table(D,T){
+ function heat(v,mx,c){return '<span class="pill" style="background:color-mix(in srgb,'+css(c)+' '+Math.min(35,v/mx*35)+'%,transparent)">'+pc(v)+'</span>'}
+ var mxE=Math.max.apply(null,D.map(function(r){return r.errR})),mxY=Math.max.apply(null,D.map(function(r){return r.yR}));
+ var h="<thead><tr><th>Process Date</th><th>Folder Name</th><th>Total</th><th>White</th><th>White %</th><th>Yellow</th><th>Yellow %</th><th>Pass 2 = Compare</th><th>P1 Errors</th><th>P1 Error %</th><th>P1 Correct</th><th>AI Accuracy</th></tr></thead><tbody>";
+ D.forEach(function(r){h+='<tr><td>'+r.date+'</td><td>'+r.batch+'</td><td>'+nf(r.total)+'</td><td>'+nf(r.white)+'</td><td>'+pc(r.wR)+'</td><td>'+nf(r.yellow)+'</td><td>'+heat(r.yR,mxY,"yel")+'</td><td>'+nf(r.p2)+'</td><td>'+nf(r.err)+'</td><td>'+heat(r.errR,mxE,"err")+'</td><td>'+nf(r.ok)+'</td><td><b style="color:var(--ok)">'+pc(r.acc)+'</b></td></tr>'});
+ h+='</tbody><tfoot><tr><td>Total</td><td></td><td>'+nf(T.total)+'</td><td>'+nf(T.white)+'</td><td>'+pc(T.wR)+'</td><td>'+nf(T.yellow)+'</td><td>'+pc(T.yR)+'</td><td>'+nf(T.p2)+'</td><td>'+nf(T.err)+'</td><td>'+pc(T.errR)+'</td><td>'+nf(T.ok)+'</td><td style="color:var(--ok)">'+pc(T.acc)+'</td></tr></tfoot>';
+ el("tbl").innerHTML=h;
+}
+
+var IMG=789;
+var FIELDS=[["Invoice Number",704,786,785,745,716],["Invoice Date",655,783,783,708,668],["Customer Account No",782,789,789,788,781],["PO Number",789,789,789,789,789],["Business Unit Name",520,743,728,479,558],["Routing Code",684,785,784,764,692],["Business Unit Address",382,780,776,449,615],["Vendor name",595,771,762,554,661],["Vendor Address",673,779,778,632,661],["S1 Doc Type",660,780,772,695,668],["Unclear",772,785,784,768,785],["Unclear data Value",787,785,784,783,785],["Special Handling",216,782,778,732,183],["invoice total",661,776,773,723,656]];
+var CMP=[["P1=P2","Pass 1 = Pass 2","blu"],["COM=EQC","Compare = EQC","pur"],["COM=QC","Compare = QC","yel"],["P2=QC","Pass 2 = QC","wht"],["P1=QC","Pass 1 = QC (AI accuracy)","ok"]];
+function fieldTotals(rows){rows=rows||FIELDS;var t=[];for(var j=1;j<=5;j++){t.push(rows.reduce(function(a,r){return a+r[j]},0))}return t}
+fill(el("selField"),FIELDS.map(function(r){return r[0]}),"All fields (TOTAL)");
+el("selCmp").innerHTML=CMP.map(function(c,i){return '<option value="'+i+'"'+(i===4?' selected':'')+'>'+c[1]+'</option>'}).join("");
+function fieldRender(){
+ try{
+  var ty=el("selType").value,FL=FIELDS.filter(function(r){return ty==="all"||(ty==="dual")===!!DUAL[r[0]]});var f=el("selField").value;if(f!=="all"&&!FL.some(function(r){return r[0]===f}))f="all";var sf=el("selField"),fkey=FL.map(function(r){return r[0]}).join("|");if(sf.getAttribute("data-k")!==fkey){fill(sf,FL.map(function(r){return r[0]}),"All fields (TOTAL)");sf.setAttribute("data-k",fkey)}sf.value=f;var ci=+el("selCmp").value,all=f==="all";
+  var row=all?fieldTotals(FL):FL.filter(function(r){return r[0]===f})[0].slice(1),den=all?IMG*FL.length:IMG;
+  el("fbTitle").textContent=(ty==="all"?"":(ty==="dual"?"Dual Pass · ":"Single Pass · "))+(all?"All fields (TOTAL)":f)+" · match % by comparison";
+  var W=520,H=240,l=36,b=44,t=22,bw=(W-l-10)/5,ph=H-b-t,w=Math.min(56,bw*.6);
+  var s='<svg viewBox="0 0 '+W+' '+H+'" role="img" aria-label="Match rates">';
+  [0,25,50,75,100].forEach(function(g){var y=t+ph*(1-g/100);s+='<line x1="'+l+'" x2="'+(W-6)+'" y1="'+y+'" y2="'+y+'" stroke="var(--bd)"/><text x="'+(l-6)+'" y="'+(y+4)+'" text-anchor="end">'+g+'%</text>'});
+  row.forEach(function(v,i){var p=v/den,x=l+i*bw+(bw-w)/2,h=ph*p,y=t+ph-h;
+   s+='<rect x="'+x+'" y="'+y+'" width="'+w+'" height="'+h+'" rx="4" fill="'+css(CMP[i][2])+'"><title>'+CMP[i][1]+': '+nf(v)+' of '+nf(den)+'</title></rect><text x="'+(x+w/2)+'" y="'+(y-5)+'" text-anchor="middle" style="fill:var(--tx);font-weight:600">'+pc(p,1)+'</text><text x="'+(x+w/2)+'" y="'+(H-26)+'" text-anchor="middle">'+CMP[i][0]+'</text><text x="'+(x+w/2)+'" y="'+(H-12)+'" text-anchor="middle">'+nf(v)+'</text>'});
+  el("fieldBars").innerHTML=s+'</svg>';
+  // ranking
+  el("frTitle").textContent=CMP[ci][1]+" · fields ranked (lowest first)";
+  var R=FL.map(function(r){return {n:r[0],p:r[ci+1]/IMG,v:r[ci+1]}}).sort(function(a,b){return a.p-b.p});
+  var rh=22,H2=R.length*rh+10,lw=130,bx=lw+6,mw=360-bx-44;
+  var s2='<svg viewBox="0 0 360 '+H2+'" role="img" aria-label="Field ranking">';
+  R.forEach(function(r,i){var y=i*rh+4,sel=!all&&r.n===f;
+   s2+='<text x="'+lw+'" y="'+(y+13)+'" text-anchor="end" style="'+(sel?'fill:var(--tx);font-weight:700':'')+'">'+r.n+'</text><rect x="'+bx+'" y="'+y+'" width="'+Math.max(2,mw*r.p)+'" height="'+(rh-7)+'" rx="3" fill="'+css(CMP[ci][2])+'" opacity="'+(all||sel?1:.45)+'"/><text x="'+(bx+Math.max(2,mw*r.p)+5)+'" y="'+(y+13)+'" style="fill:var(--tx);font-weight:600">'+pc(r.p,1)+'</text>'});
+  el("fieldRank").innerHTML=s2+'</svg>';
+  // table
+  function cell(v,d){var p=v/d;return '<td>'+nf(v)+'</td><td><span class="pill" style="background:color-mix(in srgb,var(--err) '+Math.round((1-p)*55)+'%,transparent)">'+pc(p,1)+'</span></td>'}
+  var h='<thead><tr><th>Field</th><th>Type</th>'+CMP.map(function(c){return '<th>'+c[0]+'</th><th>%</th>'}).join("")+'</tr></thead><tbody>';
+  FL.forEach(function(r){var sel=!all&&r[0]===f;h+='<tr'+(sel?' style="background:color-mix(in srgb,var(--blu) 12%,transparent);font-weight:700"':'')+'><td>'+r[0]+'</td><td><span class="pill" style="background:color-mix(in srgb,'+css(DUAL[r[0]]?'blu':'pur')+' 22%,transparent)">'+(DUAL[r[0]]?'Dual':'Single')+'</span></td>'+r.slice(1).map(function(v){return cell(v,IMG)}).join("")+'</tr>'});
+  h+='</tbody><tfoot><tr><td>TOTAL</td><td></td>'+fieldTotals(FL).map(function(v){return cell(v,IMG*FL.length)}).join("")+'</tr></tfoot>';
+  el("fieldTbl").innerHTML=h;
+ }catch(e){el("fieldTbl").innerHTML='<tr><td class="err">Field section error: '+e.message+'</td></tr>'}
+}
+["selType","selField","selCmp"].forEach(function(id){el(id).addEventListener("change",fieldRender)});
+var DUAL={'Invoice Number':1,'Invoice Date':1,'Customer Account No':1,'Routing Code':1,'S1 Doc Type':1,'Special Handling':1,'invoice total':1,'Unclear data Value':1};
+var CFG={p1:['S1DocType','InvoiceNumber','InvoiceDate','CustomerAccountNumber','PurchaseOrderNumber','RoutingCodeBillToSoldTo','BusinessUnitName','BusinessUnitAddress1','VendorName','VendorAddress1','CurrencyCode','SpecialHandling','UnclearData','SubTotal','InvoiceTotal'],p2:['S1DocType','InvoiceNumber','InvoiceDate','CustomerAccountNumber','RoutingCodeBillToSoldTo','SpecialHandling','UnclearData','InvoiceTotal'],cp:['S1DocType','InvoiceNumber','InvoiceDate','CustomerAccountNumber','RoutingCodeBillToSoldTo','SpecialHandling','UnclearData','InvoiceTotal','SubTotal','PurchaseOrderNumber','BusinessUnitName','BusinessUnitAddress1','VendorName','VendorAddress1','CurrencyCode']};
+function ftAgg(rows){var n=rows.length*IMG,a=[0,0,0,0,0];rows.forEach(function(r){for(var j=0;j<5;j++)a[j]+=r[j+1]});return a.map(function(v){return v/n})}
+function pp(x){return (x>=0?'+':'')+(x*100).toFixed(1)+' pp'}
+function ftRender(){
+ try{
+  var dual=FIELDS.filter(function(r){return DUAL[r[0]]}),single=FIELDS.filter(function(r){return !DUAL[r[0]]});
+  var D=ftAgg(dual),S=ftAgg(single); // idx: 0 P1=P2, 1 COM=EQC, 2 COM=QC, 3 P2=QC, 4 P1=QC
+  var K=[['Dual Pass fields',dual.length,'Pass 1 + Pass 2 + Compare','blu'],['Single Pass fields',single.length,'Pass 1 + Compare','pur'],['Dual · Pass 1 = QC',pc(D[4],1),'Pass 2 = QC '+pc(D[3],1),'ok'],['Single · Pass 1 = QC',pc(S[4],1),'Compare = QC '+pc(S[2],1),'yel'],['Dual · Compare = QC',pc(D[2],1),pp(D[2]-D[4])+' vs Pass 1','ok'],['Single · Compare = QC',pc(S[2],1),pp(S[2]-S[4])+' vs Pass 1','yel']];
+  el('ftKpis').innerHTML=K.map(function(k){return '<div class="card kpi" style="--c:'+css(k[3])+'"><div class="l">'+k[0]+'</div><div class="v">'+k[1]+'</div><div class="s">'+k[2]+'</div></div>'}).join('');
+  // chart
+  var ST=[['Pass 1 = QC',4],['Pass 2 = QC',3],['Compare = EQC',1],['Compare = QC',2]],W=520,H=250,l=36,b=34,t=22,gw=(W-l-10)/ST.length,ph=H-b-t,bw=Math.min(40,gw*.35);
+  var s='<svg viewBox="0 0 '+W+' '+H+'" role="img" aria-label="Dual vs single pass accuracy">';
+  [0,25,50,75,100].forEach(function(g){var y=t+ph*(1-g/100);s+='<line x1="'+l+'" x2="'+(W-6)+'" y1="'+y+'" y2="'+y+'" stroke="var(--bd)"/><text x="'+(l-6)+'" y="'+(y+4)+'" text-anchor="end">'+g+'%</text>'});
+  ST.forEach(function(q,i){var cx=l+i*gw+gw/2;
+   [[D[q[1]],'blu',-bw-1,false],[S[q[1]],'pur',1,q[1]===3]].forEach(function(z){var x=cx+z[2];
+    if(z[3]){s+='<text x="'+(x+bw/2)+'" y="'+(t+ph-6)+'" text-anchor="middle">n/a</text>';return}
+    var h=ph*z[0],y=t+ph-h;s+='<rect x="'+x+'" y="'+y+'" width="'+bw+'" height="'+h+'" rx="3" fill="'+css(z[1])+'"/><text x="'+(x+bw/2)+'" y="'+(y-4)+'" text-anchor="middle" style="fill:var(--tx);font-weight:600;font-size:10px">'+pc(z[0],1)+'</text>'});
+   s+='<text x="'+cx+'" y="'+(H-12)+'" text-anchor="middle">'+q[0]+'</text>'});
+  el('ftChart').innerHTML=s+'</svg>'+legend([['Dual Pass ('+dual.length+' fields)','blu'],['Single Pass ('+single.length+' fields)','pur']]);
+  // config table
+  var h='<thead><tr><th>Pass 1 Field</th><th>Pass 2 Field</th><th>Compare Field</th><th style="text-align:left">Field Type</th></tr></thead><tbody>';
+  for(var i=0;i<15;i++){var d=i<8;h+='<tr><td>'+CFG.p1[i]+'</td><td>'+(CFG.p2[i]||'')+'</td><td>'+CFG.cp[i]+'</td><td style="text-align:left"><span class="pill" style="background:color-mix(in srgb,'+css(d?'blu':'pur')+' 22%,transparent)">'+(d?'Dual Pass':'Single Pass')+'</span></td></tr>'}
+  el('ftCfg').innerHTML=h+'</tbody><tfoot><tr><td>15</td><td>8</td><td>15</td><td></td></tr></tfoot>';
+  // insights
+  var low=single.slice().sort(function(a,b){return a[5]-b[5]}).slice(0,2).map(function(r){return r[0]+' ('+pc(r[5]/IMG,1)+')'}).join(' and ');
+  var up=dual.slice().sort(function(a,b){return (b[4]-b[5])-(a[4]-a[5])})[0];
+  var lowD=dual.slice().sort(function(a,b){return (a[4]-a[5])-(b[4]-b[5])})[0];
+  el('ftNotes').innerHTML='<b style="color:var(--tx)">Key findings</b><ul style="margin:6px 0 0;padding-left:18px;line-height:1.7">'
+   +'<li><b>Pass 2 adds value on Dual Pass fields:</b> accuracy moves from '+pc(D[4],1)+' (Pass 1 = QC) to '+pc(D[3],1)+' (Pass 2 = QC), '+pp(D[3]-D[4])+'. Compare then brings it to '+pc(D[2],1)+'.</li>'
+   +'<li><b>Single Pass fields rely on Pass 1 plus Compare:</b> '+pc(S[4],1)+' at Pass 1 rises to '+pc(S[2],1)+' after Compare ('+pp(S[2]-S[4])+'). Their Pass 1 starting point is '+pp(S[4]-D[4])+' relative to Dual Pass fields.</li>'
+   +'<li><b>Largest Pass 2 uplift:</b> '+up[0]+' ('+pc(up[5]/IMG,1)+' to '+pc(up[4]/IMG,1)+', '+pp((up[4]-up[5])/IMG)+'). <b>Smallest:</b> '+lowD[0]+' ('+pp((lowD[4]-lowD[5])/IMG)+').</li>'
+   +'<li><b>Weakest Single Pass fields at Pass 1:</b> '+low+'. These have no Pass 2 safety net, so Compare carries the correction.</li>'
+   +'<li><b>Reading note:</b> P1=P2 and P2=QC do not apply to Single Pass fields (no Pass 2 field), so they show as n/a here.</li>'
+   +'<li><b>Scope:</b> SPID is excluded (it duplicated Special Handling), so this analysis covers 14 fields: 8 Dual and 6 Single. <b>Mapping assumption:</b> the sheet field Unclear is counted as Single Pass and Unclear data Value as UnclearData (Dual). The configuration table on the left is shown as provided (15 fields).</li></ul>';
+  // field table
+  function cp(a,b){var d=a-b,c=d>=0?'var(--ok)':'var(--err)';return '<b style="color:'+c+'">'+pp(d)+'</b>'}
+  function pill(p){return '<span class="pill" style="background:color-mix(in srgb,var(--err) '+Math.round((1-p)*55)+'%,transparent)">'+pc(p,1)+'</span>'}
+  var rows=dual.concat(single),t2='<thead><tr><th>Field</th><th style="text-align:left">Type</th><th>Pass 1 = QC</th><th>Pass 2 = QC</th><th>Compare = EQC</th><th>Compare = QC</th><th>Pass 2 uplift</th><th>Compare uplift</th></tr></thead><tbody>';
+  rows.forEach(function(r){var d=!!DUAL[r[0]],p1=r[5]/IMG,p2=r[4]/IMG,eq=r[2]/IMG,cq=r[3]/IMG;
+   t2+='<tr><td>'+r[0]+'</td><td style="text-align:left"><span class="pill" style="background:color-mix(in srgb,'+css(d?'blu':'pur')+' 22%,transparent)">'+(d?'Dual':'Single')+'</span></td><td>'+pill(p1)+'</td><td>'+(d?pill(p2):'n/a')+'</td><td>'+pill(eq)+'</td><td>'+pill(cq)+'</td><td>'+(d?cp(p2,p1):'n/a')+'</td><td>'+cp(cq,p1)+'</td></tr>'});
+  t2+='</tbody><tfoot><tr><td>Dual Pass ('+dual.length+')</td><td></td><td>'+pc(D[4],1)+'</td><td>'+pc(D[3],1)+'</td><td>'+pc(D[1],1)+'</td><td>'+pc(D[2],1)+'</td><td>'+pp(D[3]-D[4])+'</td><td>'+pp(D[2]-D[4])+'</td></tr><tr><td>Single Pass ('+single.length+')</td><td></td><td>'+pc(S[4],1)+'</td><td>n/a</td><td>'+pc(S[1],1)+'</td><td>'+pc(S[2],1)+'</td><td>n/a</td><td>'+pp(S[2]-S[4])+'</td></tr></tfoot>';
+  el('ftTbl').innerHTML=t2;
+ }catch(e){el('ftNotes').innerHTML='<span class="err">Field type section error: '+e.message+'</span>'}
+}
+ftRender();
+fieldRender();
+var TAB='all';
+function weekRows(t){var w=t==='w3'?'Week 3':t==='w4'?'Week 4':null;return w?ALL.filter(function(r){return r.week===w}):ALL}
+function refill(){var R=weekRows(TAB);fill(el('selDate'),R.map(function(r){return r.date}),'All dates');fill(el('selBatch'),R.map(function(r){return r.batch}),'All folders')}
+function setTab(t){TAB=t;document.querySelectorAll('#tabs button').forEach(function(b){b.classList.toggle('on',b.dataset.t===t)});var c=t==='cmp';el('mainView').style.display=c?'none':'';el('filters').style.display=c?'none':'';el('cmpView').style.display=c?'':'none';el('fieldView').style.display=(t==='all'||t==='w3')?'':'none';if(c){cmpRender()}else{refill();render()}}
+el('tabs').addEventListener('click',function(e){var b=e.target.closest('button');if(b)setTab(b.dataset.t)});
+function wkAgg(rows){return calc({date:'',white:sum(rows,'white'),yellow:sum(rows,'yellow'),p2:sum(rows,'p2'),err:sum(rows,'err'),ok:sum(rows,'ok')})}
+var CM=[['acc','AI Accuracy','pct',1],['errR','Pass 1 Error %','pct',-1],['yR','Yellow Fields %','pct',-1],['wR','White Fields %','pct',-1],['p2R','Pass 2 = Compare (% of Yellow)','pct',0],['total','Total Fields','count',0],['ok','Pass 1 Correct','count',0],['err','Pass 1 Errors','count',0],['yellow','Yellow Fields','count',0],['white','White Fields','count',0],['p2','Pass 2 = Compare','count',0]];
+function cm(k){return CM.filter(function(m){return m[0]===k})[0]}
+function fm(m,v){return m[2]==='pct'?pc(v,2):nf(v)}
+function dl(m,a,b){var d=b-a,t=m[2]==='pct'?(d>=0?'+':'')+(d*100).toFixed(2)+' pp':(d>=0?'+':'')+nf(d)+' ('+(a?(d/a*100).toFixed(1):'0')+'%)',c=(m[3]===0||d===0)?'var(--mut)':((d>0)===(m[3]>0)?'var(--ok)':'var(--err)');return '<b style="color:'+c+'">'+t+'</b>'}
+el('selCmpMetric').innerHTML=CM.map(function(m){return '<option value="'+m[0]+'">'+m[1]+'</option>'}).join('');
+el('selCmpMetric').addEventListener('change',function(){cmpRender()});
+function cmpRender(){
+ try{
+  var A=ALL.filter(function(r){return r.week==='Week 3'}),B=ALL.filter(function(r){return r.week==='Week 4'}),a=wkAgg(A),b=wkAgg(B),DN=['Mon','Tue','Wed','Thu','Fri'];
+  el('cmpKpis').innerHTML=['acc','errR','yR','wR','total'].map(function(k){var m=cm(k);return '<div class="card kpi" style="--c:var(--pur)"><div class="l">'+m[1]+' · Week 4</div><div class="v">'+fm(m,b[k])+'</div><div class="s">Week 3 '+fm(m,a[k])+' · '+dl(m,a[k],b[k])+'</div></div>'}).join('');
+  function srt(R,dir){return R.slice().sort(function(x,y){return dir*(y.acc-x.acc)})[0]}
+  var bA=srt(A,1),wA=srt(A,-1),bB=srt(B,1),wB=srt(B,-1),vg=(b.total/a.total-1)*100;
+  el('cmpNotes').innerHTML='<h2>Key comparison</h2><ul style="margin:6px 0 0;padding-left:18px;line-height:1.7;font-size:13px">'
+   +'<li><b>AI accuracy:</b> Week 4 '+pc(b.acc)+' vs Week 3 '+pc(a.acc)+' ('+pp(b.acc-a.acc)+').</li>'
+   +'<li><b>Volume:</b> '+nf(b.total)+' fields in Week 4 vs '+nf(a.total)+' in Week 3 ('+(vg>=0?'+':'')+vg.toFixed(1)+'%).</li>'
+   +'<li><b>Pass 1 error rate:</b> '+pc(b.errR)+' vs '+pc(a.errR)+' ('+pp(b.errR-a.errR)+'). <b>Yellow corrections:</b> '+pc(b.yR)+' vs '+pc(a.yR)+' ('+pp(b.yR-a.yR)+'). <b>White fields:</b> '+pc(b.wR)+' vs '+pc(a.wR)+'.</li>'
+   +'<li><b>Best / weakest day:</b> Week 3 '+bA.d+' ('+pc(bA.acc,1)+') / '+wA.d+' ('+pc(wA.acc,1)+'); Week 4 '+bB.d+' ('+pc(bB.acc,1)+') / '+wB.d+' ('+pc(wB.acc,1)+').</li></ul>';
+  // day-wise overlay
+  var key=el('selCmpMetric').value,m=cm(key),isP=m[2]==='pct',W=900,H=316,l=56,r=20,t=24,bb=50,pw=W-l-r,ph=H-t-bb;
+  var va=A.map(function(x){return x[key]}),vb=B.map(function(x){return x[key]}),al=va.concat(vb),mn=Math.min.apply(null,al),mx=Math.max.apply(null,al),lo,hi;
+  if(isP){var pad=Math.max((mx-mn)*0.5,0.01);lo=Math.max(0,mn-pad);hi=mx+pad;if(key==='acc'||key==='p2R')hi=Math.min(1,hi)}else{lo=0;hi=mx*1.12||1}
+  if(hi<=lo)hi=lo+1;
+  var gx=function(i){return l+pw*i/4},gy=function(v){return t+ph*(1-(v-lo)/(hi-lo))},ft=function(v){return isP?pc(v,1):nf(Math.round(v))};
+  var s='<svg viewBox="0 0 '+W+' '+H+'" role="img" aria-label="Week 3 vs Week 4">';
+  for(var i=0;i<=4;i++){var v=lo+(hi-lo)*i/4,y=gy(v);s+='<line x1="'+l+'" x2="'+(W-r)+'" y1="'+y+'" y2="'+y+'" stroke="var(--bd)"/><text x="'+(l-8)+'" y="'+(y+4)+'" text-anchor="end">'+ft(v)+'</text>'}
+  for(var j=0;j<5;j++){s+='<text x="'+gx(j)+'" y="'+(H-26)+'" text-anchor="middle" style="fill:var(--tx);font-weight:600">'+DN[j]+'</text><text x="'+gx(j)+'" y="'+(H-10)+'" text-anchor="middle">'+A[j].d+' | '+B[j].d+'</text>'}
+  [[va,'blu',-11],[vb,'pur',18]].forEach(function(z){var c=css(z[1]);s+='<polyline fill="none" stroke="'+c+'" stroke-width="3" stroke-linejoin="round" points="'+z[0].map(function(x,i){return gx(i)+','+gy(x)}).join(' ')+'"/>';z[0].forEach(function(x,i){s+='<circle cx="'+gx(i)+'" cy="'+gy(x)+'" r="5" fill="'+c+'"/><text x="'+gx(i)+'" y="'+(gy(x)+z[2])+'" text-anchor="middle" style="fill:var(--tx);font-weight:600">'+(isP?pc(x,1):nf(x))+'</text>'})});
+  el('cmpTrend').innerHTML=s+'</svg>'+legend([['Week 3 (19-23 Oct)','blu'],['Week 4 (26-30 Oct)','pur']]);
+  // grouped bars
+  var BK=[['acc','AI Acc.'],['errR','P1 Error'],['yR','Yellow'],['wR','White'],['p2R','P2=Cmp / Yellow']],W2=520,H2=250,l2=36,b2=34,t2=22,gw=(W2-l2-10)/BK.length,ph2=H2-b2-t2,bw=Math.min(36,gw*.34);
+  var s2='<svg viewBox="0 0 '+W2+' '+H2+'" role="img" aria-label="Rate comparison">';
+  [0,25,50,75,100].forEach(function(g){var y=t2+ph2*(1-g/100);s2+='<line x1="'+l2+'" x2="'+(W2-6)+'" y1="'+y+'" y2="'+y+'" stroke="var(--bd)"/><text x="'+(l2-6)+'" y="'+(y+4)+'" text-anchor="end">'+g+'%</text>'});
+  BK.forEach(function(q,i){var cx=l2+i*gw+gw/2;[[a[q[0]],'blu',-bw-1],[b[q[0]],'pur',1]].forEach(function(z){var h=ph2*z[0],x=cx+z[2];s2+='<rect x="'+x+'" y="'+(t2+ph2-h)+'" width="'+bw+'" height="'+h+'" rx="3" fill="'+css(z[1])+'"/><text x="'+(x+bw/2)+'" y="'+(t2+ph2-h-4)+'" text-anchor="middle" style="fill:var(--tx);font-weight:600;font-size:9px">'+pc(z[0],1)+'</text>'});s2+='<text x="'+cx+'" y="'+(H2-12)+'" text-anchor="middle">'+q[1]+'</text>'});
+  el('cmpBars').innerHTML=s2+'</svg>'+legend([['Week 3','blu'],['Week 4','pur']]);
+  // metric table
+  var h='<thead><tr><th>Metric</th><th>Week 3</th><th>Week 4</th><th>Change</th></tr></thead><tbody>';
+  CM.forEach(function(m){h+='<tr><td>'+m[1]+'</td><td>'+fm(m,a[m[0]])+'</td><td>'+fm(m,b[m[0]])+'</td><td>'+dl(m,a[m[0]],b[m[0]])+'</td></tr>'});
+  el('cmpTbl').innerHTML=h+'</tbody>';
+  // day table
+  var d2='<thead><tr><th>Day</th><th>Week 3 date</th><th>W3 fields</th><th>W3 accuracy</th><th>Week 4 date</th><th>W4 fields</th><th>W4 accuracy</th><th>Change</th></tr></thead><tbody>';
+  for(var k=0;k<5;k++){d2+='<tr><td>'+DN[k]+'</td><td>'+A[k].date+'</td><td>'+nf(A[k].total)+'</td><td>'+pc(A[k].acc)+'</td><td>'+B[k].date+'</td><td>'+nf(B[k].total)+'</td><td>'+pc(B[k].acc)+'</td><td>'+dl(CM[0],A[k].acc,B[k].acc)+'</td></tr>'}
+  d2+='</tbody><tfoot><tr><td>Total</td><td></td><td>'+nf(a.total)+'</td><td>'+pc(a.acc)+'</td><td></td><td>'+nf(b.total)+'</td><td>'+pc(b.acc)+'</td><td>'+dl(CM[0],a.acc,b.acc)+'</td></tr></tfoot>';
+  el('cmpDay').innerHTML=d2;
+ }catch(e){el('cmpNotes').innerHTML='<span class="err">Comparison error: '+e.message+'</span>'}
+}
+["selDate","selBatch","selMetric"].forEach(function(id){el(id).addEventListener("change",render)});
+render();
+</script>
+</body>
+</html>
